@@ -15,10 +15,6 @@ import {
 }
 from './three.module.js';
 
-//import {
-//    AsciiEffect
-//} from '../jsm/AsciiEffect.js';
-
 class ThreeJSRenderer {
 
     constructor(canvas, video) {
