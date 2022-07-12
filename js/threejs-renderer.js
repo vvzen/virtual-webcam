@@ -119,21 +119,33 @@ class ThreeJSRenderer {
             canvas: this.canvas,
             antialias: true
         });
+
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         //document.body.appendChild(this.renderer.domElement);
+
+
     }
 
     render() {
 
+        // TODO: Check if OffscreenCanvas can help here
+        // Draw the video first on another canvas, then read its colors by accessing that canvas
+        this.invisibleCanvas = document.createElement('canvas');
+        this.invisibleCanvas.width = video.videoWidth;
+        this.invisibleCanvas.height = video.videoHeight;
+        this.ctx = this.invisibleCanvas.getContext('2d');
+
+        this.ctx.drawImage(this.video, 0, 0, this.video.videoWidth, this.video.videoHeight);
+        const videoColors = this.ctx.getImageData(0, 0, video.videoWidth, video.videoHeight).data;
+
         const time = Date.now() * 0.001;
-        console.log("rendering..");
+        //console.log("rendering..");
 
         this.mesh.rotation.x = time * 0.25;
         this.mesh.rotation.y = time * 0.5;
 
         this.renderer.render(this.scene, this.camera);
-
     }
 }
 
