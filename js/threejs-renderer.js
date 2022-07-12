@@ -5,15 +5,10 @@ import {
     Color,
     Scene,
     PerspectiveCamera,
-    PointLight,
     BufferGeometry,
-    SphereGeometry,
     Mesh,
     MeshPhongMaterial,
-    MeshBasicMaterial,
-    PlaneGeometry,
     DoubleSide,
-    MeshStandardMaterial,
     Float32BufferAttribute,
     WebGLRenderer,
     HemisphereLight
@@ -30,9 +25,13 @@ class ThreeJSRenderer {
         this.canvas = canvas;
         this.video = video;
 
-        console.log("here");
+        console.log("setting up ThreeJSRenderer");
         console.log("canvas: ", this.canvas);
         this.gl = this.canvas.getContext("webgl");
+        this.mediaStream = this.video.srcObject;
+
+        console.log("Video:", this.video);
+        console.log("GL:", this.gl);
 
         this.start = Date.now();
 
@@ -82,9 +81,7 @@ class ThreeJSRenderer {
                 const g = (y / size) + 0.5;
 
                 colors.push(r, g, 1);
-
             }
-
         }
 
         // generate indices (data for element array buffer)
@@ -102,9 +99,7 @@ class ThreeJSRenderer {
 
                 indices.push(a, b, d); // face one
                 indices.push(b, c, d); // face two
-
             }
-
         }
 
         //

@@ -1,4 +1,4 @@
-import { ShaderRenderer } from './shader-renderer.js';
+//import { ShaderRenderer } from './shader-renderer.js';
 import { ThreeJSRenderer } from './threejs-renderer.js';
 
 class FilterStream {
