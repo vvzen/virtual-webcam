@@ -4,11 +4,11 @@
 import {
     Color,
     Scene,
+    LinearInterpolant,
     PerspectiveCamera,
     BufferGeometry,
-    Mesh,
-    MeshPhongMaterial,
-    DoubleSide,
+    Points,
+    PointsMaterial,
     Float32BufferAttribute,
     WebGLRenderer,
     HemisphereLight
@@ -19,15 +19,16 @@ class ThreeJSRenderer {
 
     constructor(canvas, video) {
         this.canvas = canvas;
+        console.log("Canvas: ", this.canvas);
         this.video = video;
+        console.log("Video:", this.video);
 
         console.log("setting up ThreeJSRenderer");
-        console.log("canvas: ", this.canvas);
-        this.gl = this.canvas.getContext("webgl");
-        this.mediaStream = this.video.srcObject;
 
-        console.log("Video:", this.video);
+        this.gl = this.canvas.getContext("webgl");
         console.log("GL:", this.gl);
+
+        this.mediaStream = this.video.srcObject;
 
         this.start = Date.now();
 
@@ -36,85 +37,50 @@ class ThreeJSRenderer {
 
     init() {
         this.camera = new PerspectiveCamera(27, window.innerWidth / window.innerHeight, 1, 3500);
-        this.camera.position.z = 64;
+        this.camera.position.x = 0;
+        this.camera.position.z = 120;
 
         this.scene = new Scene();
         this.scene.background = new Color(0x050505);
 
         const light = new HemisphereLight();
         this.scene.add(light);
+        
+        
+        // Create a point cloud
+        const spacing = 1;
 
-        //
+        console.log("Video: ", this.video);
+        console.log(`canvas WxH: ${this.canvas.width}x${this.canvas.height}`);
+        
+        const startingX = - (64 * 0.5);
+        const startingY = - (48 * 0.5);
+        const endingX   = + (64 * 0.5);
+        const endingY   = + (48 * 0.5);
 
-        const geometry = new BufferGeometry();
-
-        const indices = [];
+        console.log(`Start: ${startingX}, ${startingY}. End: ${startingY}, ${endingY}`);
 
         const vertices = [];
-        const normals = [];
-        const colors = [];
 
-        const size = 20;
-        const segments = 10;
+        console.log("Creating points..");
+        for (let x = startingX; x <= endingX; x+=spacing){
+            for (let y = startingY; y <= endingY; y+=spacing){
 
-        const halfSize = size / 2;
-        const segmentSize = size / segments;
-
-        // generate vertices, normals and color data for a simple grid geometry
-
-        for (let i = 0; i <= segments; i++) {
-
-            const y = (i * segmentSize) - halfSize;
-
-            for (let j = 0; j <= segments; j++) {
-
-                const x = (j * segmentSize) - halfSize;
-
-                vertices.push(x, -y, 0);
-                normals.push(0, 0, 1);
-
-                const r = (x / size) + 0.5;
-                const g = (y / size) + 0.5;
-
-                colors.push(r, g, 1);
+                const z = 0;
+                vertices.push(x, y, z);
             }
         }
+        console.log(`Created ${vertices.length / 3} points..`);
 
-        // generate indices (data for element array buffer)
-
-        for (let i = 0; i < segments; i++) {
-
-            for (let j = 0; j < segments; j++) {
-
-                const a = i * (segments + 1) + (j + 1);
-                const b = i * (segments + 1) + j;
-                const c = (i + 1) * (segments + 1) + j;
-                const d = (i + 1) * (segments + 1) + (j + 1);
-
-                // generate two faces (triangles) per iteration
-
-                indices.push(a, b, d); // face one
-                indices.push(b, c, d); // face two
-            }
-        }
-
-        //
-
-        geometry.setIndex(indices);
+        const geometry = new BufferGeometry();
         geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
-        geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
-        geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
 
-        const material = new MeshPhongMaterial({
-            side: DoubleSide,
-            vertexColors: true
-        });
+        const material = new PointsMaterial({color: 0xffffff});
+        const points = new Points(geometry, material);
 
-        this.mesh = new Mesh(geometry, material);
-        this.scene.add(this.mesh);
+        this.scene.add(points);
 
-        //
-
+        // Render on top of the existing canvas
         this.renderer = new WebGLRenderer({
             canvas: this.canvas,
             antialias: true
@@ -123,7 +89,6 @@ class ThreeJSRenderer {
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         //document.body.appendChild(this.renderer.domElement);
-
 
     }
 
@@ -139,11 +104,10 @@ class ThreeJSRenderer {
         this.ctx.drawImage(this.video, 0, 0, this.video.videoWidth, this.video.videoHeight);
         const videoColors = this.ctx.getImageData(0, 0, video.videoWidth, video.videoHeight).data;
 
-        const time = Date.now() * 0.001;
-        //console.log("rendering..");
+        // TODO: Update the color of the points with the colors from the video
 
-        this.mesh.rotation.x = time * 0.25;
-        this.mesh.rotation.y = time * 0.5;
+        //const time = Date.now() * 0.001;
+        //console.log("rendering..");
 
         this.renderer.render(this.scene, this.camera);
     }

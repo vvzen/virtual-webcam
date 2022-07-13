@@ -17,9 +17,10 @@ class FilterStream {
     });
 
     const canvas = document.createElement("canvas");
+    console.log("Canvas: ", canvas);
 
     this.canvas = canvas;
-    console.log("Canvas: ", canvas);
+
     //this.renderer = new ShaderRenderer(this.canvas, video, shader);
     this.renderer = new ThreeJSRenderer(this.canvas, video);
 
