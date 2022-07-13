@@ -7,6 +7,15 @@ class FilterStream {
     this.stream = stream;
 
     const video = document.createElement("video");
+
+    // We need to wait this callback before being able
+    // to read the width and height of the video
+    // See https://stackoverflow.com/questions/4129102/html5-video-dimensions
+    video.addEventListener('loadedmetadata', function(e){
+      console.log("onLoadedMetadata");
+      console.log(video.videoWidth, video.videoHeight);
+    });
+
     const canvas = document.createElement("canvas");
 
     this.canvas = canvas;
