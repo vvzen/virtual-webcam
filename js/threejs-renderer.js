@@ -135,8 +135,10 @@ class ThreeJSRenderer {
 
         //for (let x = this.starting.x; x <= this.ending.x; x+=this.spacing){
         //    for (let y = this.starting.y; y <= this.ending.y; y+=this.spacing){
+        //for (let y = this.numRows; y > 0; y--){
         for (let y = 0; y >= -this.numRows; y--){
-            for (let x = 0; x <= this.numColumns; x++){
+            //for (let x = 0; x <= this.numColumns; x++){
+            for (let x = this.numColumns; x > 0; x--){
             //for (let x = 0; x <= this.numColumns; x++){
                 //console.log(index);
 
@@ -206,9 +208,11 @@ class ThreeJSRenderer {
 
         let remappedColors = [];
         for (let index = 0; index < videoData.length; index+=4){
+        //for (let index = videoData.length; index > 0; index-=4){
             const r = videoData[index + 0];
             const g = videoData[index + 1];
             const b = videoData[index + 2];
+            const a = videoData[index + 3];
             remappedColors.push(r, g, b);
         }
 
