@@ -2,18 +2,47 @@
 //import * as THREE from './three.js';
 
 import {
-    Color,
+    BoxGeometry,
+    MeshBasicMaterial,
+    Mesh,
     Scene,
-    LinearInterpolant,
-    PerspectiveCamera,
-    BufferGeometry,
+    Color,
+    Vector2,
     Points,
-    PointsMaterial,
-    Float32BufferAttribute,
     WebGLRenderer,
-    HemisphereLight
+    BufferGeometry,
+    PointsMaterial,
+    AxesHelper,
+    HemisphereLight,
+    PerspectiveCamera,
+    OrthographicCamera,
+    Float32BufferAttribute,
 }
 from './three.module.js';
+
+function indexFromXY(x, y, numColumns){
+    return (numColumns * x) + y;
+}
+
+function xyFromIndex(i, numColumns){
+
+  let x = Math.floor(i / numColumns) ;
+  let y = i % numColumns;
+
+  return new Vector2(x, y);
+}
+
+
+function remapIndex(x, y, numColumns, subdivisionLevel){
+
+    let numNewCols = (numColumns * subdivisionLevel) - (subdivisionLevel - 1);
+    let newX = x * subdivisionLevel;
+    let newY = y * subdivisionLevel;
+    //console.log(`numColumns: ${numColumns}, numNewCols: ${numNewCols}`);
+    //console.log(`x: ${newX}, y: ${newY}`);
+    
+    return indexFromXY(newX, newY, numNewCols);
+}
 
 class ThreeJSRenderer {
 
@@ -36,78 +65,156 @@ class ThreeJSRenderer {
     }
 
     init() {
-        this.camera = new PerspectiveCamera(27, window.innerWidth / window.innerHeight, 1, 3500);
-        this.camera.position.x = 0;
-        this.camera.position.z = 120;
-
         this.scene = new Scene();
-        this.scene.background = new Color(0x050505);
+        this.camera = new PerspectiveCamera(27, window.innerWidth / window.innerHeight, 1, 3500);
+        //this.camera = new OrthographicCamera(
+        //    this.canvas.width / -2,
+        //    this.canvas.width / +2,
+        //    this.canvas.height / +2,
+        //    this.canvas.height / -2,
+        //    1,
+        //    1000,
+        //);
+        this.scene.add(new AxesHelper(1));
 
-        const light = new HemisphereLight();
-        this.scene.add(light);
-        
-        
+        // Debugging CUBE
+        const cubeGeometry = new BoxGeometry(640, 480, 100);
+        const cubeMaterial = new MeshBasicMaterial( {color: 0xffffff} );
+        const cube = new Mesh(cubeGeometry, cubeMaterial);
+        this.scene.add(cube);
+
+        //this.camera.position.x = 0;
+        this.camera.position.z = 2420;
+        //this.camera.position.z = 60;
+
+        this.subDivisionLevel = 1;
+
+        this.scene.background = new Color(0x555555);
+
+        //const light = new HemisphereLight();
+        //light.translateZ(-10);
+        //this.scene.add(light);
+
         // Create a point cloud
-        const spacing = 1;
+        //this.MAX_POINTS_NUM = 10000; // max number of points we can allocate on the buffer
+        this.spacing = 1;
 
-        console.log("Video: ", this.video);
         console.log(`canvas WxH: ${this.canvas.width}x${this.canvas.height}`);
-        
-        const startingX = - (64 * 0.5);
-        const startingY = - (48 * 0.5);
-        const endingX   = + (64 * 0.5);
-        const endingY   = + (48 * 0.5);
 
-        console.log(`Start: ${startingX}, ${startingY}. End: ${startingY}, ${endingY}`);
+        // Hardcoded for now, but this should come after reading the video.videoWidth and video.videoHeight
+        // Sadly, their value can only be accessed at a specific time (using a callback)
+        const webCamWidth = 640;
+        const webCamHeight = 480;
 
-        const vertices = [];
+        const gridWidth = webCamWidth * (1 / this.subDivisionLevel);
+        const gridHeight = webCamHeight * (1 / this.subDivisionLevel);
 
+        this.starting = new Vector2(
+            - (gridWidth  * 0.5),
+            - (gridHeight * 0.5)
+        );
+        this.ending = new Vector2(
+            + (gridWidth  * 0.5),
+            + (gridHeight * 0.5)
+        );
+
+        this.numColumns = 640;
+        this.numRows =    480;
+        this.totalPoints = this.numRows * this.numColumns;
+
+        console.log(`Start: ${this.starting.x}, ${this.starting.y}. End: ${this.ending.x}, ${this.ending.y}`);
+        console.log(`We created ${this.numColumns} columns and ${this.numRows} rows`);
+        console.log(`We will create ${this.totalPoints * 4} buffered attributes and ${this.totalPoints} points`);
+
+        const positions = new Float32Array(this.totalPoints * 4);
+        //let colors = new Float32Array(this.totalPoints * 3);
+        let colors = new Float32Array(this.totalPoints * 4);
+
+        let index = 0;
         console.log("Creating points..");
-        for (let x = startingX; x <= endingX; x+=spacing){
-            for (let y = startingY; y <= endingY; y+=spacing){
 
-                const z = 0;
-                vertices.push(x, y, z);
+        //for (let x = this.starting.x; x <= this.ending.x; x+=this.spacing){
+        //    for (let y = this.starting.y; y <= this.ending.y; y+=this.spacing){
+        for (let y = this.numRows; y > 0; y--){
+            for (let x = 0; x <= this.numColumns; x++){
+                //console.log(index);
+
+                // Position
+                positions[index + 0] = x;
+                positions[index + 1] = y;
+                positions[index + 2] = 100;
+
+                index += 4;
             }
         }
-        console.log(`Created ${vertices.length / 3} points..`);
+
+        //console.log(`We created ${this.totalPoints} points out of a max of ${this.MAX_POINTS_NUM}`);
 
         const geometry = new BufferGeometry();
-        geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('position', new Float32BufferAttribute(positions, 4));
+        geometry.setAttribute('color', new Float32BufferAttribute(colors, 4));
 
-        const material = new PointsMaterial({color: 0xffffff});
-        const points = new Points(geometry, material);
-
-        this.scene.add(points);
+        const pointsSize = 2;
+        const material = new PointsMaterial({
+            size: pointsSize,
+            vertexColors: true
+        });
+        this.points = new Points(geometry, material);
+        this.scene.add(this.points);
 
         // Render on top of the existing canvas
         this.renderer = new WebGLRenderer({
             canvas: this.canvas,
-            antialias: true
+            antialias: false
         });
 
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         //document.body.appendChild(this.renderer.domElement);
 
+        console.log("this.subDivisionLevel: ", this.subDivisionLevel);
+        let indexForCam = remapIndex(0, 0, this.numColumns, this.subDivisionLevel);
+        console.log("indexForCam", indexForCam);
+
+        this.invisibleCanvas = document.createElement('canvas');
+        this.invisibleCanvas.width = video.videoWidth;
+        this.invisibleCanvas.height = video.videoHeight;
+        this.ctx = this.invisibleCanvas.getContext('2d');
+        this.ctx.drawImage(this.video, 0, 0, this.video.videoWidth, this.video.videoHeight);
+        const allVideoColors = this.ctx.getImageData(0, 0, video.videoWidth, video.videoHeight).data;
+        console.log(allVideoColors);
+        console.log(
+             `First four colors of video: ${allVideoColors[0]}, ${allVideoColors[1]}, ${allVideoColors[2]}, ${allVideoColors[3]}`
+        );
+        console.log(this.ctx);
     }
 
     render() {
 
         // TODO: Check if OffscreenCanvas can help here
         // Draw the video first on another canvas, then read its colors by accessing that canvas
-        this.invisibleCanvas = document.createElement('canvas');
-        this.invisibleCanvas.width = video.videoWidth;
-        this.invisibleCanvas.height = video.videoHeight;
-        this.ctx = this.invisibleCanvas.getContext('2d');
+        this.ctx.drawImage(this.video, 0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+        console.log(`videoWidth: ${this.video.videoWidth}, videoHeight: ${this.video.videoHeight}`);
 
-        this.ctx.drawImage(this.video, 0, 0, this.video.videoWidth, this.video.videoHeight);
-        const videoColors = this.ctx.getImageData(0, 0, video.videoWidth, video.videoHeight).data;
+        // This returns a Uint8ClampedArray
+        const videoData = this.ctx.getImageData(0, 0, this.ctx.canvas.width, this.ctx.canvas.height).data;
 
-        // TODO: Update the color of the points with the colors from the video
+        let colors = this.points.geometry.attributes.color.array;
 
-        //const time = Date.now() * 0.001;
-        //console.log("rendering..");
+        for (let i = videoData.length; i > 0; i-=4){
+        //for (let i = 0; i < videoData.length; i+=4){
+
+            //let point = xyFromIndex(i, this.numColumns);
+            //let newIndex = remapIndex(point.x, point.y, this.numColumns, this.subDivisionLevel);
+
+            colors[i + 0] = videoData[i + 0] / 255;
+            colors[i + 1] = videoData[i + 1] / 255;
+            colors[i + 2] = videoData[i + 2] / 255;
+            colors[i + 3] = videoData[i + 3] / 255;
+        }
+
+        this.points.geometry.attributes.position.needsUpdate = true; // required after the first render
+        this.points.geometry.attributes.color.needsUpdate = true;
 
         this.renderer.render(this.scene, this.camera);
     }
