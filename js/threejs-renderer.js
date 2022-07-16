@@ -16,9 +16,17 @@ import {
 }
 from './three.module.js';
 
-import { FontLoader } from '../jsm/FontLoader.js';
-import { PCDLoader } from '../jsm/PCDLoader.js';
+//import { FontLoader } from '../jsm/FontLoader.js';
+//import { PCDLoader } from '../jsm/PCDLoader.js';
 //import { TextGeometry } from '../jsm/TextGeometry.js';
+
+import { EffectComposer } from '../jsm/EffectComposer.js';
+import { RenderPass } from '../jsm/RenderPass.js';
+import { ShaderPass } from '../jsm/ShaderPass.js';
+
+import { RGBShiftShader } from '../jsm/shaders/RGBShiftShader.js';
+import { DotScreenShader } from '../jsm/shaders/DotScreenShader.js';
+
 
 function indexFromXY(x, y, numColumns){
     return (numColumns * x) + y;
@@ -138,26 +146,26 @@ class ThreeJSRenderer {
         // TODO: load a geometry that has the same amount of points of the
         // pointcloud we currently have, and then morph our points position
         // to that geometry
-        const textGeometryURL = 'https://raw.githubusercontent.com/vvzen/virtual-webcam/feature/add-support-for-rendering-via-threejs/geometry/seeya.pcd';
-        const loader = new PCDLoader();
+        //const textGeometryURL = 'https://raw.githubusercontent.com/vvzen/virtual-webcam/feature/add-support-for-rendering-via-threejs/geometry/seeya.pcd';
+        //const loader = new PCDLoader();
 
-        loader.load(textGeometryURL,
-            function(targetPoints){
-                console.log("Finished loading!");
-                console.log(targetPoints);
-                targetPoints.geometry.center();
-                targetPoints.geometry.scale(240, 240, 240);
-                targetPoints.material.color.setHex(0x00ff00);
-                //thisInstance.scene.add(targetPoints);
-                thisInstance.targetPoints = targetPoints;
-            },
-            function(xhr){
-                console.log("load in progress...");
-            },
-            function(err){
-                console.log(err);
-            }
-        );
+        //loader.load(textGeometryURL,
+        //    function(targetPoints){
+        //        console.log("Finished loading!");
+        //        console.log(targetPoints);
+        //        targetPoints.geometry.center();
+        //        targetPoints.geometry.scale(240, 240, 240);
+        //        targetPoints.material.color.setHex(0x00ff00);
+        //        //thisInstance.scene.add(targetPoints);
+        //        thisInstance.targetPoints = targetPoints;
+        //    },
+        //    function(xhr){
+        //        console.log("load in progress...");
+        //    },
+        //    function(err){
+        //        console.log(err);
+        //    }
+        //);
 
         const pointsSize = 5;
         const material = new PointsMaterial({
@@ -184,6 +192,18 @@ class ThreeJSRenderer {
         //this.ctx.drawImage(this.video, 0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
         this.startTime = new Date().getTime() / 1000;
+
+        // Try our the effect composer
+        this.composer = new EffectComposer(this.renderer);
+				this.composer.addPass( new RenderPass(this.scene, this.camera));
+
+				const effect1 = new ShaderPass(DotScreenShader);
+				effect1.uniforms['scale'].value = 4;
+				this.composer.addPass(effect1);
+
+				const effect2 = new ShaderPass(RGBShiftShader);
+				effect2.uniforms['amount'].value = 0.0015;
+				this.composer.addPass(effect2);
     }
 
     render() {
@@ -206,8 +226,8 @@ class ThreeJSRenderer {
         this.elapsedTime = (new Date().getTime() / 1000) - this.startTime;
         //console.log(this.elapsedTime);
 
-        const offsetMultiplier = MathUtils.mapLinear(this.elapsedTime, 0, 120, 0.0000001, 2.1);
-        const lerpOffset = MathUtils.mapLinear(this.elapsedTime, 0, 60 * 30, 0, 1);
+        //const offsetMultiplier = MathUtils.mapLinear(this.elapsedTime, 0, 120, 0.0000001, 2.1);
+        //const lerpOffset = MathUtils.mapLinear(this.elapsedTime, 0, 60 * 30, 0, 1);
 
         let remappedColors = [];
         for (let index = 0; index < videoData.length; index+=4){
@@ -220,30 +240,30 @@ class ThreeJSRenderer {
             remappedColors.push(r, g, b);
         }
 
-        let targetPositions;
-        if (this.targetPoints){
-            targetPositions = this.targetPoints.geometry.attributes.position.array;
-        }
+        //let targetPositions;
+        //if (this.targetPoints){
+        //    targetPositions = this.targetPoints.geometry.attributes.position.array;
+        //}
 
         for (let i = 0; i < remappedColors.length; i+=3){
 
-            // TODO: slowly morph the points into a final text
-            if (targetPositions){
-                const newX = MathUtils.lerp(positions[i + 0], targetPositions[i + 0], lerpOffset);
-                const newY = MathUtils.lerp(positions[i + 1], targetPositions[i + 1], lerpOffset);
-                const newZ = MathUtils.lerp(positions[i + 2], targetPositions[i + 2], lerpOffset);
+            // Slowly morph the points into a final text
+            //if (targetPositions){
+            //    const newX = MathUtils.lerp(positions[i + 0], targetPositions[i + 0], lerpOffset);
+            //    const newY = MathUtils.lerp(positions[i + 1], targetPositions[i + 1], lerpOffset);
+            //    const newZ = MathUtils.lerp(positions[i + 2], targetPositions[i + 2], lerpOffset);
 
-                positions[i + 0] = newX;
-                positions[i + 1] = newY;
-                positions[i + 2] = newZ;
-            }
+            //    positions[i + 0] = newX;
+            //    positions[i + 1] = newY;
+            //    positions[i + 2] = newZ;
+            //}
             //let point = xyFromIndex(i, this.numColumns);
             //let newIndex = remapIndex(point.x, point.y, this.numColumns, this.subDivisionLevel);
-            if (Math.random() > 0.1){
-                positions[i + 0] += (Math.random() - 0.5) * offsetMultiplier;
-                positions[i + 1] += (Math.random() - 0.5) * offsetMultiplier;
-                positions[i + 2] += (Math.random() - 0.5) * offsetMultiplier;
-            }
+            //if (Math.random() > 0.1){
+            //    positions[i + 0] += (Math.random() - 0.5) * offsetMultiplier;
+            //    positions[i + 1] += (Math.random() - 0.5) * offsetMultiplier;
+            //    positions[i + 2] += (Math.random() - 0.5) * offsetMultiplier;
+            //}
 
             colors[i + 0] = remappedColors[i + 0] / 255;
             colors[i + 1] = remappedColors[i + 1] / 255;
@@ -253,7 +273,8 @@ class ThreeJSRenderer {
         this.points.geometry.attributes.position.needsUpdate = true; // required after the first render
         this.points.geometry.attributes.color.needsUpdate = true;
 
-        this.renderer.render(this.scene, this.camera);
+        //this.renderer.render(this.scene, this.camera);
+        this.composer.render();
     }
 }
 
