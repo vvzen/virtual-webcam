@@ -39,9 +39,7 @@ function remapIndex(x, y, numColumns, subdivisionLevel){
     let numNewCols = (numColumns * subdivisionLevel) - (subdivisionLevel - 1);
     let newX = x * subdivisionLevel;
     let newY = y * subdivisionLevel;
-    //console.log(`numColumns: ${numColumns}, numNewCols: ${numNewCols}`);
-    //console.log(`x: ${newX}, y: ${newY}`);
- 
+
     return indexFromXY(newX, newY, numNewCols);
 }
 
@@ -83,7 +81,7 @@ class ThreeJSRenderer {
         this.subDivisionLevel = 1;
 
         //this.scene.background = new Color(0xaaaaaa);
-        this.scene.background = new Color(0xff0000);
+        this.scene.background = new Color().setRGB(0.15, 0.15, 0.15);
 
         // Create a point cloud
         this.spacing = 1;
@@ -154,10 +152,11 @@ class ThreeJSRenderer {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
 
         this.invisibleCanvas = document.createElement('canvas');
-        this.invisibleCanvas.width = this.video.videoWidth;
-        this.invisibleCanvas.height = this.video.videoHeight;
+        this.invisibleCanvas.width = this.numColumns;
+        this.invisibleCanvas.height = this.numRows;
         this.ctx = this.invisibleCanvas.getContext('2d');
-        this.ctx.drawImage(this.video, 0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+        console.log(this.invisibleCanvas);
+        //this.ctx.drawImage(this.video, 0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
         this.startTime = new Date().getTime() / 1000;
     }
