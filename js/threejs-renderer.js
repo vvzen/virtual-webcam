@@ -138,13 +138,7 @@ class ThreeJSRenderer {
         // TODO: load a geometry that has the same amount of points of the
         // pointcloud we currently have, and then morph our points position
         // to that geometry
-
-        //const textGeometryURL = 'https://github.com/vvzen/virtual-webcam/blob/feature/add-support-for-rendering-via-threejs/geometry/seeya.pcd?raw=true';
-        //const textGeometryURL = 'https://github.com/vvzen/virtual-webcam/raw/feature/add-support-for-rendering-via-threejs/geometry/seeya.pcd';
-        //const textGeometryURL = 'https://valerioviperino.me/assets/framestore/seeya.pcd'
         const textGeometryURL = 'https://raw.githubusercontent.com/vvzen/virtual-webcam/feature/add-support-for-rendering-via-threejs/geometry/seeya.pcd';
-
-        //const textGeometryURL = './geometry/seeya.pcd';
         const loader = new PCDLoader();
 
         loader.load(textGeometryURL,
@@ -152,9 +146,10 @@ class ThreeJSRenderer {
                 console.log("Finished loading!");
                 console.log(targetPoints);
                 targetPoints.geometry.center();
-                targetPoints.geometry.scale(300, 300, 300);
+                targetPoints.geometry.scale(240, 240, 240);
                 targetPoints.material.color.setHex(0x00ff00);
-                thisInstance.scene.add(targetPoints);
+                //thisInstance.scene.add(targetPoints);
+                thisInstance.targetPoints = targetPoints;
             },
             function(xhr){
                 console.log("load in progress...");
@@ -170,7 +165,7 @@ class ThreeJSRenderer {
             vertexColors: true
         });
         this.points = new Points(geometry, material);
-        //this.scene.add(this.points);
+        this.scene.add(this.points);
 
         // Render on top of the existing canvas
         this.renderer = new WebGLRenderer({
@@ -212,6 +207,7 @@ class ThreeJSRenderer {
         //console.log(this.elapsedTime);
 
         const offsetMultiplier = MathUtils.mapLinear(this.elapsedTime, 0, 120, 0.0000001, 2.1);
+        const lerpOffset = MathUtils.mapLinear(this.elapsedTime, 0, 60 * 30, 0, 1);
 
         let remappedColors = [];
         for (let index = 0; index < videoData.length; index+=4){
@@ -220,15 +216,30 @@ class ThreeJSRenderer {
             const g = videoData[index + 1];
             const b = videoData[index + 2];
             // We don't need the alpha
-            const a = videoData[index + 3];
+            //const a = videoData[index + 3];
             remappedColors.push(r, g, b);
+        }
+
+        let targetPositions;
+        if (this.targetPoints){
+            targetPositions = this.targetPoints.geometry.attributes.position.array;
         }
 
         for (let i = 0; i < remappedColors.length; i+=3){
 
+            // TODO: slowly morph the points into a final text
+            if (targetPositions){
+                const newX = MathUtils.lerp(positions[i + 0], targetPositions[i + 0], lerpOffset);
+                const newY = MathUtils.lerp(positions[i + 1], targetPositions[i + 1], lerpOffset);
+                const newZ = MathUtils.lerp(positions[i + 2], targetPositions[i + 2], lerpOffset);
+
+                positions[i + 0] = newX;
+                positions[i + 1] = newY;
+                positions[i + 2] = newZ;
+            }
             //let point = xyFromIndex(i, this.numColumns);
             //let newIndex = remapIndex(point.x, point.y, this.numColumns, this.subDivisionLevel);
-            if (Math.random() > 0.5){
+            if (Math.random() > 0.1){
                 positions[i + 0] += (Math.random() - 0.5) * offsetMultiplier;
                 positions[i + 1] += (Math.random() - 0.5) * offsetMultiplier;
                 positions[i + 2] += (Math.random() - 0.5) * offsetMultiplier;
