@@ -2,9 +2,6 @@
 //import * as THREE from './three.js';
 
 import {
-    BoxGeometry,
-    MeshBasicMaterial,
-    Mesh,
     MathUtils,
     Scene,
     Color,
@@ -14,12 +11,14 @@ import {
     BufferGeometry,
     PointsMaterial,
     AxesHelper,
-    HemisphereLight,
     PerspectiveCamera,
-    OrthographicCamera,
     Float32BufferAttribute,
 }
 from './three.module.js';
+
+import { FontLoader } from '../jsm/FontLoader.js';
+import { PCDLoader } from '../jsm/PCDLoader.js';
+//import { TextGeometry } from '../jsm/TextGeometry.js';
 
 function indexFromXY(x, y, numColumns){
     return (numColumns * x) + y;
@@ -134,13 +133,44 @@ class ThreeJSRenderer {
         geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
         geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
 
+        const thisInstance = this;
+
+        // TODO: load a geometry that has the same amount of points of the
+        // pointcloud we currently have, and then morph our points position
+        // to that geometry
+
+        //const textGeometryURL = 'https://github.com/vvzen/virtual-webcam/blob/feature/add-support-for-rendering-via-threejs/geometry/seeya.pcd?raw=true';
+        //const textGeometryURL = 'https://github.com/vvzen/virtual-webcam/raw/feature/add-support-for-rendering-via-threejs/geometry/seeya.pcd';
+        //const textGeometryURL = 'https://valerioviperino.me/assets/framestore/seeya.pcd'
+        const textGeometryURL = 'https://raw.githubusercontent.com/vvzen/virtual-webcam/feature/add-support-for-rendering-via-threejs/geometry/seeya.pcd';
+
+        //const textGeometryURL = './geometry/seeya.pcd';
+        const loader = new PCDLoader();
+
+        loader.load(textGeometryURL,
+            function(targetPoints){
+                console.log("Finished loading!");
+                console.log(targetPoints);
+                targetPoints.geometry.center();
+                targetPoints.geometry.scale(300, 300, 300);
+                targetPoints.material.color.setHex(0x00ff00);
+                thisInstance.scene.add(targetPoints);
+            },
+            function(xhr){
+                console.log("load in progress...");
+            },
+            function(err){
+                console.log(err);
+            }
+        );
+
         const pointsSize = 5;
         const material = new PointsMaterial({
             size: pointsSize,
             vertexColors: true
         });
         this.points = new Points(geometry, material);
-        this.scene.add(this.points);
+        //this.scene.add(this.points);
 
         // Render on top of the existing canvas
         this.renderer = new WebGLRenderer({
@@ -185,6 +215,7 @@ class ThreeJSRenderer {
 
         let remappedColors = [];
         for (let index = 0; index < videoData.length; index+=4){
+            //const newIndex = this.numColumns - index;
             const r = videoData[index + 0];
             const g = videoData[index + 1];
             const b = videoData[index + 2];
